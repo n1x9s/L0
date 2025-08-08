@@ -1,0 +1,126 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+)
+
+type Order struct {
+	OrderUID          string    `gorm:"primaryKey" json:"order_uid"`
+	TrackNumber       string    `json:"track_number"`
+	Entry             string    `json:"entry"`
+	Delivery          Delivery  `gorm:"embedded;embeddedPrefix:delivery_" json:"delivery"`
+	Payment           Payment   `gorm:"embedded;embeddedPrefix:payment_" json:"payment"`
+	Items             []Item    `gorm:"foreignKey:OrderUID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"items"`
+	Locale            string    `json:"locale"`
+	InternalSignature string    `json:"internal_signature"`
+	CustomerID        string    `json:"customer_id"`
+	DeliveryService   string    `json:"delivery_service"`
+	ShardKey          string    `json:"shardkey"`
+	SmID              int       `json:"sm_id"`
+	DateCreated       time.Time `json:"date_created"`
+}
+
+type Delivery struct {
+	Name    string `json:"name"`
+	Phone   string `json:"phone"`
+	Zip     string `json:"zip"`
+	City    string `json:"city"`
+	Address string `json:"address"`
+	Region  string `json:"region"`
+	Email   string `json:"email"`
+}
+
+type Payment struct {
+	Transaction  string `json:"transaction"`
+	RequestID    string `json:"request_id"`
+	Currency     string `json:"currency"`
+	Provider     string `json:"provider"`
+	Amount       int    `json:"amount"`
+	PaymentDt    int64  `json:"payment_dt"`
+	Bank         string `json:"bank"`
+	DeliveryCost int    `json:"delivery_cost"`
+	GoodsTotal   int    `json:"goods_total"`
+	CustomFee    int    `json:"custom_fee"`
+}
+
+type Item struct {
+	ID          uint   `gorm:"primaryKey" json:"-"`
+	OrderUID    string `gorm:"index" json:"-"`
+	ChrtID      int    `json:"chrt_id"`
+	TrackNumber string `json:"track_number"`
+	Price       int    `json:"price"`
+	RID         string `json:"rid"`
+	Name        string `json:"name"`
+	Sale        int    `json:"sale"`
+	Size        string `json:"size"`
+	TotalPrice  int    `json:"total_price"`
+	NmID        int    `json:"nm_id"`
+	Brand       string `json:"brand"`
+	Status      int    `json:"status"`
+}
+
+func main() {
+	err := godotenv.Load()
+	if err != nil {
+		return
+	}
+
+	host := os.Getenv("DB_HOST")
+	user := os.Getenv("DB_USER")
+	dbname := os.Getenv("DB_NAME")
+	password := os.Getenv("DB_PASSWORD")
+	sslmode := os.Getenv("DB_SSLMODE")
+
+	dsn := fmt.Sprintf("host=%s user=%s dbname=%s password=%s sslmode=%s", host, user, dbname, password, sslmode)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("ошибка подключения к бд %v", err)
+	}
+
+	//if err := db.Migrator().DropTable(&Item{}); err != nil {
+	//	log.Fatalf("Ошибка дропа: %v", err)
+	//}
+	//
+	//if err := db.Migrator().DropTable(&Order{}); err != nil {
+	//	log.Fatalf("Ошибка дропа: %v", err)
+	//}
+	//
+	//if err := db.AutoMigrate(&Order{}, &Item{}); err != nil {
+	//	log.Fatalf("Ошибка миграции: %v", err)
+	//}
+
+	r := gin.Default()
+
+	r.GET("/orders", func(c *gin.Context) {
+		var orders []Order
+		if err := db.Preload("Items").Find(&orders).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Orders not found"})
+			return
+		}
+		c.JSON(http.StatusOK, orders)
+	})
+
+	r.GET("/orders/:order_uid", func(c *gin.Context) {
+		orderUID := c.Param("order_uid")
+
+		var order Order
+		if err := db.Preload("Items").First(&order, "order_uid = ?", orderUID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, order)
+	})
+
+	r.Run()
+
+}
