@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Поиск заказа</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 30px;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            width: 300px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .details {
+            margin-top: 30px;
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
+        }
+
+        .item {
+            margin-bottom: 10px;
+        }
+
+        .error {
+            color: red;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<h1>Поиск заказа по UID</h1>
+
+<input type="text" id="orderUidInput" placeholder="Введите Order UID" />
+<button onclick="fetchOrder()">Показать</button>
+
+<div class="error" id="errorMsg" style="display: none;"></div>
+
+<div class="details" id="orderDetails" style="display: none;">
+    <h2>Детали заказа</h2>
+    <div id="detailsContent"></div>
+</div>
+
+<script>
+    const API_URL = 'http://localhost:8080'; // адрес Go-бэкенда
+
+    async function fetchOrder() {
+        const uid = document.getElementById('orderUidInput').value.trim();
+        const errorMsg = document.getElementById('errorMsg');
+        const orderBox = document.getElementById('orderDetails');
+        const content = document.getElementById('detailsContent');
+
+        errorMsg.style.display = 'none';
+        orderBox.style.display = 'none';
+        content.innerHTML = '';
+
+        if (!uid) {
+            errorMsg.textContent = 'Введите UID заказа.';
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/orders/${uid}`);
+
+            if (!res.ok) {
+                throw new Error("Заказ не найден");
+            }
+
+            const order = await res.json();
+
+            content.innerHTML = `
+          <p><strong>UID:</strong> ${order.order_uid}</p>
+          <p><strong>Клиент:</strong> ${order.customer_id}</p>
+          <p><strong>Сервис доставки:</strong> ${order.delivery_service}</p>
+          <p><strong>Дата:</strong> ${new Date(order.date_created).toLocaleString()}</p>
+          <h3>Товары:</h3>
+          <ul>
+            ${order.items.map(item => `
+              <li class="item">
+                <strong>${item.name}</strong> — ${item.price}₽ × ${item.size} [${item.brand}]
+              </li>
+            `).join('')}
+          </ul>
+        `;
+
+            orderBox.style.display = 'block';
+        } catch (err) {
+            errorMsg.textContent = err.message;
+            errorMsg.style.display = 'block';
+        }
+    }
+</script>
+</body>
+</html>

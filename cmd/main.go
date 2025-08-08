@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -99,6 +100,7 @@ func main() {
 	//}
 
 	r := gin.Default()
+	r.Use(cors.Default())
 
 	r.GET("/orders", func(c *gin.Context) {
 		var orders []Order
