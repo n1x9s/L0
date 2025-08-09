@@ -12,9 +12,11 @@ func main() {
 	if err != nil {
 		return
 	}
+
 	r := gin.Default()
 	r.Use(cors.Default())
 	routers.RegisterOrderRoutes(r)
+
 	r.Run()
 
 }
