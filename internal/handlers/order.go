@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/n1x9s/learnBasic/internal/db"
-	"github.com/n1x9s/learnBasic/internal/models"
+	"github.com/n1x9s/L0/internal/db"
+	"github.com/n1x9s/L0/internal/models"
 )
 
 func GetOrders(c *gin.Context) {

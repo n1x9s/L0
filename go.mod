@@ -1,4 +1,4 @@
-module github.com/n1x9s/learnBasic
+module github.com/n1x9s/L0
 
 go 1.24.4
 

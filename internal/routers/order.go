@@ -2,7 +2,7 @@ package routers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/n1x9s/learnBasic/internal/handlers"
+	"github.com/n1x9s/L0/internal/handlers"
 )
 
 func RegisterOrderRoutes(r *gin.Engine) {
